@@ -1,62 +1,52 @@
-# Data Efficiency and Robustness Analysis: Classical ML vs. SmallResNet
+# Data Efficiency and Robustness: Classical ML vs. SmallResNet
 
-An empirical evaluation investigating sample efficiency and perturbation robustness between Classical Machine Learning pipelines (PCA + SVM / Random Forest) and a Convolutional Neural Network (`SmallResNet`) on a balanced CIFAR-10 subset.
-
----
-
-## 📌 Executive Summary
-
-This study establishes formal falsification criteria to test two foundational hypotheses regarding deep learning versus feature-based models:
-
-* **Hypothesis 1 (Data Size Scaling):** **Rejected.** Classical ML significantly outperforms SmallResNet in low-data regimes ($\le 10\%$ data) by $+7.03\%$ and $+10.27\%$ ($t = 10.65, p = 0.0087$), violating the pre-experimental $\le 5\%$ equivalence boundary. CNN only achieves statistical superiority at $100\%$ scale ($+7.71\%, p = 0.018$).
-* **Hypothesis 2 (Noise Robustness & Error Propagation):** **Rejected.** The assumption that multi-layer convolutional networks amplify noise faster than shallow models is disproven. Under mild Gaussian perturbations ($\sigma = 0 \to 12.75$), Classical ML immediately collapses by $30.78\%$, while SmallResNet only drops by $5.53\%$, proving over 5x greater early-stage noise resilience.
+An empirical study evaluating sample efficiency and Gaussian noise robustness between Classical ML pipelines (HOG + PCA + SVM/RF/LR) and a CNN (`SmallResNet`) on a stratified CIFAR-10 subset.
 
 ---
 
-## 📂 Repository Structure
+## Research Hypotheses & Verdicts
+
+* **Hypothesis 1 (Data Size Scaling):** Assumed both models achieve similar performance under limited data ($\le 10\%$), with the CNN outperforming when training data exceeds $30\%$.  
+  **Status: Rejected.** Classical ML significantly outperforms CNN at $5\%$ ($+7.03\%$) and $10\%$ data ($+10.27\%, p = 0.0087$). CNN only achieves a statistically significant advantage at $100\%$ scale ($+7.71\%, p = 0.0180$).
+* **Hypothesis 2 (Noise Robustness):** Assumed CNN suffers faster accuracy degradation due to multi-layer error propagation under increasing noise ($\sigma \in \{0, 12.75, 38.25, 76.5\}$).  
+  **Status: Rejected.** Under initial mild noise ($\sigma = 12.75$), Classical ML accuracy collapses by $30.78\%$, whereas CNN degrades by only $5.53\%$. CNN demonstrates superior early-stage resilience.
+
+---
+
+## Key Results
+
+| Data Fraction | Classical ML (%) | CNN (%) | Difference (ML - DL) | $p$-value | Significance ($p < 0.05$) |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| 5%   | 34.80 | 27.77 | +7.03% | 0.0920 | No  |
+| 10%  | 39.14 | 28.87 | +10.27%| 0.0087 | Yes |
+| 25%  | 42.75 | 39.70 | +3.05% | 0.0640 | No  |
+| 50%  | 44.06 | 45.20 | -1.14% | 0.0512 | No  |
+| 100% | 45.36 | 53.07 | -7.71% | 0.0180 | Yes |
+
+---
+
+## Repository Structure
 
 ```text
-├── data/                               # Raw dataset directory (ignored by git)
-├── Results/                            # Visual artifacts and generated plots
-│   ├── Learning_Curve_Mean.png         # Scaling curve (mean accuracy across seeds)
-│   ├── Learning_Curve_Max.png          # Scaling curve (peak accuracy)
-│   └── Robustness_Curve.png            # Degradation curve across noise levels
-├── cifar10_subset.npz                  # Processed stratified CIFAR-10 subset
-├── BuildSubset.py                      # Subset extraction and preprocessing
-├── PipelineML.py                       # Classical ML training and evaluation pipeline
-├── PipelineResNet.py                   # PyTorch SmallResNet architecture & training loop
-├── Sweep.py                            # Grid search and hyperparameter sweeping
-├── Log Processing.py                   # Raw log aggregation and statistics extraction
-├── Hypothesis Verification.py          # Paired t-tests, drop rate, and hypothesis checks
-├── Schema Log.xlsx                     # Structured experiment log
-├── Statistical_Test_Results.xlsx       # Comprehensive hypothesis testing artifacts
-├── Hypothesis Verification Report.docx  # Final comprehensive technical report
-└── Hypothesis Verification Report.pdf   # Exported publication-ready document
-```
+├── data/
+│   └── cifar10_subset.npz
+├── docs/
+│   ├── Research.pdf
+│   └── Hypothesis_Verification_Report.pdf
+├── results/
+│   ├── figures/
+│   └── schema_log.xlsx
+├── src/
+│   ├── build_subset.py
+│   ├── pipeline_ml.py
+│   ├── pipeline_resnet.py
+│   ├── sweep.py
+│   ├── log_processing.py
+│   └── hypothesis_verification.py
+├── .gitignore
+└── README.md
 
----
-
-## 🔬 Experimental Methodology & Findings
-
-### 1. Data Scaling Verification (H1)
-* Models were evaluated across fractions: $5\%, 10\%, 25\%, 50\%, 100\%$ of training data.
-* Classical feature extractors demonstrated superior inductive biases under data starvation ($\le 10\%$), whereas CNN requires a minimum sample critical mass ($\approx 50\%$) to break even and eventually outperform.
-
-| Percentage Data | ML Mean Acc (%) | DL Mean Acc (%) | Difference (ML - DL) | $p$-value | H1 Status |
-| :---: | :---: | :---: | :---: | :---: | :---: |
-| 5% | 34.80 | 27.77 | +7.03 | 0.092 | **VIOLATED** |
-| 10% | 39.14 | 28.87 | +10.27 | 0.009 | **VIOLATED** |
-| 25% | 42.75 | 39.70 | +3.05 | 0.064 | Satisfied |
-| 50% | 44.06 | 45.20 | -1.14 | 0.051 | Satisfied |
-| 100% | 45.36 | 53.07 | -7.71 | 0.018 | Satisfied |
-
-### 2. Noise Degradation & Robustness Paradox (H2)
-* Tested under additive zero-mean Gaussian noise $\sigma \in \{0.0, 12.75, 38.25, 76.50\}$.
-* While CNN displays a higher overall linear degradation slope ($0.5142$ vs. $0.4508$), interval analysis confirms this is an artifact of CNN's significantly higher ceiling baseline ($53.07\%$ vs. $45.36\%$). Classical ML degrades steeply in the first noise band and reaches near-chance performance early.
-
----
-
-## 🚀 Reproduction & Usage
+## Reproduction & Usage
 
 ### 1. Environment Setup
 ```bash
@@ -80,5 +70,5 @@ python "Hypothesis Verification.py"
 
 ---
 
-## 📄 Artifacts
+## Artifacts
 The full breakdown of tests, methodology derivations, and analytical discussions are accessible in [Hypothesis Verification Report.pdf](./Hypothesis%20Verification%20Report.pdf).

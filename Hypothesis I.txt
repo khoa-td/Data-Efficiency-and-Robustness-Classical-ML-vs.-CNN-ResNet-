@@ -1,7 +1,0 @@
-Hypothesis:
-
-- When the training data accounts for 0–30% of the entire dataset, classical ML and CNNs exhibit comparable performance (with a difference of ≤ 5%), as variations may occur between training runs.
-
-- Once the training data exceeds 30% of the total dataset—based on the observation that small CNNs require a minimum amount of data to begin learning features superior to manually engineered ones—the CNN starts to outperform; this performance advantage can reach up to 15%.
-
-- If the performance of the two models is not comparable when using less than 30% of the training data, or if—at training data levels exceeding 30%—the CNN model outperforms the traditional ML model by more than 20%, then this is incorrect.
